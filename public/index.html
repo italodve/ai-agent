@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Casa Aurora | Loja Local Brasileira</title>
+  <meta
+    name="description"
+    content="Landing page moderna e responsiva para uma loja local brasileira, com produtos em destaque, diferenciais e atendimento inteligente via chat."
+  >
+  <style>
+    :root {
+      --bg: #f6f1e8;
+      --surface: rgba(255, 250, 244, 0.76);
+      --surface-strong: #fffdf9;
+      --text: #1f2937;
+      --muted: #5b6472;
+      --primary: #d97706;
+      --primary-strong: #b45309;
+      --secondary: #0f766e;
+      --line: rgba(31, 41, 55, 0.08);
+      --success: #16a34a;
+      --danger: #dc2626;
+      --shadow-lg: 0 24px 60px rgba(69, 43, 0, 0.14);
+      --shadow-md: 0 18px 40px rgba(31, 41, 55, 0.12);
+      --shadow-sm: 0 10px 24px rgba(31, 41, 55, 0.08);
+      --radius-xl: 28px;
+      --radius-lg: 22px;
+      --radius-md: 16px;
+      --container: 1180px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(245, 158, 11, 0.2), transparent 30%),
+        radial-gradient(circle at top right, rgba(15, 118, 110, 0.14), transparent 24%),
+        linear-gradient(180deg, #fffaf4 0%, #f7efe4 55%, #f4ede4 100%);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image:
+        linear-gradient(rgba(255, 255, 255, 0.12) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.12) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.42), transparent 78%);
+      opacity: 0.35;
+    }
+
+    h1, h2, h3, p {
+      margin: 0;
+    }
+
+    a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    button, input {
+      font: inherit;
+    }
+
+    .container {
+      width: min(calc(100% - 32px), var(--container));
+      margin: 0 auto;
+    }
+
+    .site-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(14px);
+      background: rgba(255, 250, 244, 0.7);
+      border-bottom: 1px solid rgba(31, 41, 55, 0.06);
+    }
+
+    .nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 16px 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    .brand-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 14px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      box-shadow: var(--shadow-sm);
+    }
+
+    .nav-links {
+      display: none;
+      gap: 18px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .nav-cta,
+    .button,
+    .button-secondary,
+    .chat-send,
+    .chat-toggle {
+      transition: transform 180ms ease, box-shadow 180ms ease, opacity 180ms ease;
+    }
+
+    .nav-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 18px;
+      border-radius: 999px;
+      background: var(--surface-strong);
+      border: 1px solid rgba(217, 119, 6, 0.12);
+      box-shadow: var(--shadow-sm);
+      font-weight: 700;
+    }
+
+    .hero {
+      padding: 48px 0 36px;
+    }
+
+    .hero-grid {
+      display: grid;
+      gap: 24px;
+      align-items: center;
+    }
+
+    .hero-copy,
+    .hero-card,
+    .product-card,
+    .feature-card,
+    .cta-card {
+      position: relative;
+      border-radius: var(--radius-xl);
+      background: var(--surface);
+      border: 1px solid rgba(255, 255, 255, 0.48);
+      box-shadow: var(--shadow-lg);
+      backdrop-filter: blur(16px);
+      overflow: hidden;
+    }
+
+    .hero-copy {
+      padding: 28px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 14px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--secondary);
+      font-size: 0.9rem;
+      font-weight: 700;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      font-size: clamp(2.4rem, 8vw, 5rem);
+      line-height: 0.95;
+      letter-spacing: -0.04em;
+      max-width: 10ch;
+    }
+
+    .hero-copy p,
+    .section-title p,
+    .feature-card p,
+    .chat-header p,
+    .chat-hint {
+      color: var(--muted);
+      line-height: 1.65;
+    }
+
+    .hero-copy p {
+      margin-top: 18px;
+      max-width: 56ch;
+      font-size: 1rem;
+    }
+
+    .hero-actions,
+    .cta-actions,
+    .products,
+    .features {
+      display: grid;
+      gap: 12px;
+    }
+
+    .button,
+    .button-secondary {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      min-height: 54px;
+      padding: 14px 20px;
+      border-radius: 999px;
+      border: 0;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .button {
+      background: linear-gradient(135deg, var(--success), #22c55e);
+      color: #fff;
+      box-shadow: 0 18px 32px rgba(34, 197, 94, 0.28);
+    }
+
+    .button-secondary {
+      background: rgba(255, 255, 255, 0.72);
+      color: var(--text);
+      border: 1px solid rgba(31, 41, 55, 0.08);
+    }
+
+    .button:hover,
+    .button-secondary:hover,
+    .nav-cta:hover,
+    .chat-toggle:hover,
+    .chat-send:hover {
+      transform: translateY(-2px);
+    }
+
+    .hero-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .stat,
+    .showcase-panel,
+    .showcase-mini,
+    .showcase-note,
+    .mini-card {
+      background: rgba(255, 255, 255, 0.75);
+      border: 1px solid rgba(31, 41, 55, 0.05);
+      border-radius: var(--radius-md);
+    }
+
+    .stat {
+      padding: 14px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.15rem;
+      margin-bottom: 4px;
+    }
+
+    .stat span {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    .hero-card {
+      min-height: 420px;
+      padding: 18px;
+      display: grid;
+      gap: 16px;
+      align-content: space-between;
+    }
+
+    .showcase-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .showcase-top small,
+    .showcase-note small {
+      color: var(--muted);
+      display: block;
+      margin-top: 6px;
+      line-height: 1.5;
+    }
+
+    .showcase-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 0.8fr;
+      gap: 14px;
+    }
+
+    .showcase-panel,
+    .showcase-mini,
+    .showcase-note {
+      padding: 18px;
+    }
+
+    .showcase-panel {
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      background:
+        linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 244, 230, 0.95)),
+        radial-gradient(circle at top right, rgba(15, 118, 110, 0.18), transparent 30%);
+    }
+
+    .price-badge,
+    .pill {
+      display: inline-flex;
+      align-self: flex-start;
+      padding: 10px 14px;
+      border-radius: 999px;
+      background: #fff;
+      font-weight: 800;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .price-badge {
+      color: var(--primary-strong);
+    }
+
+    .showcase-mini {
+      display: grid;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .mini-card {
+      padding: 14px;
+    }
+
+    .section {
+      padding: 26px 0;
+    }
+
+    .section-title {
+      margin-bottom: 18px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .section-title h2,
+    .cta-card h2 {
+      font-size: clamp(1.85rem, 5vw, 3rem);
+      line-height: 1.02;
+      letter-spacing: -0.03em;
+    }
+
+    .product-card {
+      overflow: hidden;
+    }
+
+    .product-visual {
+      min-height: 190px;
+      padding: 18px;
+      display: flex;
+      align-items: flex-end;
+      background-size: cover;
+      background-position: center;
+    }
+
+    .product-visual.one {
+      background-image:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.04), rgba(15, 23, 42, 0.22)),
+        linear-gradient(135deg, #f9c784, #f7f3ea 58%, #0f766e 155%);
+    }
+
+    .product-visual.two {
+      background-image:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.02), rgba(15, 23, 42, 0.22)),
+        linear-gradient(135deg, #f4ede4, #fffdf9 40%, #d97706 160%);
+    }
+
+    .product-visual.three {
+      background-image:
+        linear-gradient(180deg, rgba(15, 23, 42, 0.04), rgba(15, 23, 42, 0.25)),
+        linear-gradient(135deg, #0f766e, #8bd5cb 58%, #fef3c7 155%);
+    }
+
+    .pill {
+      padding: 8px 12px;
+      font-size: 0.88rem;
+    }
+
+    .product-content,
+    .feature-card,
+    .cta-card {
+      padding: 20px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .product-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .price {
+      color: var(--primary-strong);
+      font-weight: 800;
+      font-size: 1.1rem;
+    }
+
+    .feature-icon {
+      width: 52px;
+      height: 52px;
+      display: grid;
+      place-items: center;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(217, 119, 6, 0.16), rgba(15, 118, 110, 0.18));
+      color: var(--secondary);
+      font-weight: 800;
+    }
+
+    .cta {
+      padding: 34px 0 88px;
+    }
+
+    .cta-card {
+      background:
+        radial-gradient(circle at top right, rgba(15, 118, 110, 0.18), transparent 28%),
+        linear-gradient(135deg, rgba(255, 248, 241, 0.92), rgba(255, 255, 255, 0.88));
+    }
+
+    .footer {
+      padding: 0 0 30px;
+      color: var(--muted);
+      font-size: 0.94rem;
+    }
+
+    .chat-widget {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 50;
+    }
+
+    .chat-toggle {
+      width: 64px;
+      height: 64px;
+      border: 0;
+      border-radius: 22px;
+      cursor: pointer;
+      color: #fff;
+      background: linear-gradient(135deg, var(--secondary), #14b8a6);
+      box-shadow: 0 18px 34px rgba(15, 118, 110, 0.32);
+    }
+
+    .chat-toggle svg,
+    .button svg,
+    .nav-cta svg,
+    .chat-send svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .chat-window {
+      position: absolute;
+      right: 0;
+      bottom: 80px;
+      width: min(calc(100vw - 24px), 380px);
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 28px;
+      overflow: hidden;
+      box-shadow: 0 28px 60px rgba(15, 23, 42, 0.22);
+      backdrop-filter: blur(18px);
+      transform-origin: bottom right;
+      opacity: 0;
+      pointer-events: none;
+      transform: translateY(16px) scale(0.95);
+      transition: opacity 220ms ease, transform 220ms ease;
+    }
+
+    .chat-window.is-open {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateY(0) scale(1);
+    }
+
+    .chat-header {
+      padding: 18px 18px 16px;
+      color: #fff;
+      background: linear-gradient(135deg, #0f766e, #0f172a);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .status-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 999px;
+      background: #4ade80;
+      box-shadow: 0 0 0 8px rgba(74, 222, 128, 0.16);
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+
+    .chat-messages {
+      height: 320px;
+      overflow-y: auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background:
+        linear-gradient(180deg, rgba(250, 250, 252, 0.75), rgba(246, 241, 232, 0.72));
+    }
+
+    .message {
+      max-width: 86%;
+      padding: 12px 14px;
+      border-radius: 18px;
+      line-height: 1.55;
+      font-size: 0.95rem;
+      animation: fadeUp 180ms ease;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .message.assistant {
+      align-self: flex-start;
+      background: #fff;
+      border-bottom-left-radius: 6px;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .message.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, var(--primary), #f59e0b);
+      color: #fff;
+      border-bottom-right-radius: 6px;
+      box-shadow: 0 14px 28px rgba(217, 119, 6, 0.24);
+    }
+
+    .message.system {
+      align-self: center;
+      text-align: center;
+      color: var(--danger);
+      background: rgba(254, 242, 242, 0.96);
+      border: 1px solid rgba(220, 38, 38, 0.12);
+      font-size: 0.9rem;
+    }
+
+    .typing {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .typing span {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(15, 118, 110, 0.55);
+      animation: bounce 1s infinite ease-in-out;
+    }
+
+    .typing span:nth-child(2) {
+      animation-delay: 0.15s;
+    }
+
+    .typing span:nth-child(3) {
+      animation-delay: 0.3s;
+    }
+
+    .chat-form {
+      padding: 14px;
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 10px;
+      border-top: 1px solid rgba(31, 41, 55, 0.07);
+      background: rgba(255, 255, 255, 0.94);
+    }
+
+    .chat-input {
+      width: 100%;
+      min-height: 52px;
+      padding: 0 16px;
+      border-radius: 16px;
+      border: 1px solid rgba(31, 41, 55, 0.1);
+      outline: none;
+      background: #fff;
+      transition: border-color 180ms ease, box-shadow 180ms ease;
+    }
+
+    .chat-input:focus {
+      border-color: rgba(15, 118, 110, 0.48);
+      box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.12);
+    }
+
+    .chat-send {
+      min-width: 52px;
+      min-height: 52px;
+      border: 0;
+      border-radius: 16px;
+      cursor: pointer;
+      color: #fff;
+      background: linear-gradient(135deg, var(--secondary), #14b8a6);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .chat-send:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .chat-hint {
+      padding: 0 16px 16px;
+      font-size: 0.8rem;
+      background: rgba(255, 255, 255, 0.94);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      border: 0;
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes bounce {
+      0%, 80%, 100% { transform: scale(0.85); opacity: 0.45; }
+      40% { transform: scale(1); opacity: 1; }
+    }
+
+    @media (min-width: 720px) {
+      .nav-links {
+        display: flex;
+      }
+
+      .hero-actions,
+      .cta-actions {
+        display: flex;
+        flex-direction: row;
+      }
+
+      .hero-grid {
+        grid-template-columns: 1.1fr 0.9fr;
+      }
+
+      .products,
+      .features {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .cta-card {
+        grid-template-columns: 1.1fr auto;
+        align-items: center;
+      }
+    }
+
+    @media (min-width: 960px) {
+      .hero { padding: 56px 0 46px; }
+      .hero-copy { padding: 40px; }
+      .hero-card { padding: 22px; }
+      .section { padding: 44px 0; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation: none !important;
+        transition: none !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <header class="site-header">
+    <div class="container nav">
+      <a class="brand" href="#top" aria-label="Casa Aurora">
+        <span class="brand-badge">CA</span>
+        <span>Casa Aurora</span>
+      </a>
+      <nav class="nav-links" aria-label="Navegação principal">
+        <a href="#produtos">Destaques</a>
+        <a href="#diferenciais">Diferenciais</a>
+        <a href="#contato">Contato</a>
+      </nav>
+      <a class="nav-cta" href="https://wa.me/5511999999999?text=Ol%C3%A1%2C%20quero%20saber%20mais%20sobre%20a%20Casa%20Aurora" target="_blank" rel="noopener noreferrer">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M19.05 4.91A9.82 9.82 0 0 0 12.02 2C6.58 2 2.15 6.4 2.15 11.84c0 1.74.45 3.44 1.31 4.94L2 22l5.37-1.41a9.88 9.88 0 0 0 4.65 1.18h.01c5.44 0 9.87-4.4 9.87-9.84a9.77 9.77 0 0 0-2.85-7.02Z" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M8.46 7.76c-.2-.46-.4-.47-.58-.48h-.49c-.17 0-.44.06-.67.31-.23.24-.88.86-.88 2.08 0 1.22.9 2.41 1.03 2.58.13.16 1.74 2.78 4.3 3.78 2.13.83 2.57.66 3.03.62.46-.05 1.49-.61 1.7-1.2.21-.59.21-1.09.15-1.2-.06-.1-.23-.16-.49-.29-.26-.12-1.49-.74-1.72-.82-.23-.08-.4-.12-.57.12-.17.24-.66.82-.8.99-.15.16-.3.18-.55.06-.26-.13-1.07-.39-2.04-1.25-.76-.68-1.27-1.51-1.42-1.76-.15-.24-.02-.37.11-.49.12-.12.26-.3.39-.45.13-.15.17-.24.26-.41.08-.16.04-.31-.02-.43-.06-.12-.57-1.37-.8-1.87Z" fill="currentColor"/>
+        </svg>
+        WhatsApp
+      </a>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy">
+          <span class="eyebrow">Curadoria local • Atendimento humano • Entrega agendada</span>
+          <h1>Casa Aurora</h1>
+          <p>
+            Objetos, presentes e utilidades com estética brasileira contemporânea. Uma loja local pensada para quem valoriza design, acolhimento e descoberta em cada detalhe.
+          </p>
+          <div class="hero-actions">
+            <a class="button" href="https://wa.me/5511999999999?text=Ol%C3%A1%2C%20quero%20fazer%20um%20pedido%20na%20Casa%20Aurora" target="_blank" rel="noopener noreferrer">
+              <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <path d="M20 12a8 8 0 1 1-14.93-4.11L4 12l4.43-1.18A8 8 0 0 1 20 12Z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M9.2 10.1c.18-.25.36-.29.6-.18l1.13.52c.24.11.32.27.24.53-.08.26-.24.57-.06.8.19.24.83 1.06 1.95 1.56.27.12.47-.02.67-.2l.48-.45c.17-.16.38-.16.58-.06l1.11.55c.24.12.31.34.22.58-.37.95-1.2 1.53-2.17 1.42-1.1-.13-2.3-.74-3.63-1.95-1.55-1.4-2.22-2.67-2.34-3.78-.09-.83.43-1.66 1.22-2.34Z" fill="currentColor"/>
+              </svg>
+              Falar no WhatsApp
+            </a>
+            <a class="button-secondary" href="#produtos">Ver produtos</a>
+          </div>
+          <div class="hero-stats" aria-label="Indicadores da loja">
+            <div class="stat">
+              <strong>+1.200</strong>
+              <span>clientes atendidos</span>
+            </div>
+            <div class="stat">
+              <strong>24h</strong>
+              <span>resposta média no digital</span>
+            </div>
+            <div class="stat">
+              <strong>4,9/5</strong>
+              <span>avaliação local</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-card" aria-label="Resumo de destaques da loja">
+          <div class="showcase-top">
+            <div>
+              <strong>Seleção da semana</strong>
+              <small>Produtos com personalidade para casa, mesa posta e presentes afetivos.</small>
+            </div>
+            <div class="price-badge">Desde R$ 39</div>
+          </div>
+
+          <div class="showcase-grid">
+            <div class="showcase-panel">
+              <div>
+                <span class="pill">Mais pedido</span>
+                <h3 style="margin-top: 14px; font-size: 1.45rem;">Kit Essencial Aurora</h3>
+                <small>Peças versáteis para renovar o ambiente com textura, cor e aconchego.</small>
+              </div>
+              <strong style="font-size: 2rem; letter-spacing: -0.03em;">R$ 129</strong>
+            </div>
+            <div class="showcase-mini">
+              <div class="mini-card">
+                <strong>Entrega local</strong>
+                <small>No mesmo dia para bairros selecionados.</small>
+              </div>
+              <div class="mini-card">
+                <strong>Curadoria artesanal</strong>
+                <small>Escolhas que unem design e uso no dia a dia.</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="showcase-note">
+            <strong>Atendimento com IA + humano</strong>
+            <small>Use o chat para tirar dúvidas rápidas, pedir sugestões e receber orientação antes da compra.</small>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="produtos">
+      <div class="container">
+        <div class="section-title">
+          <span class="eyebrow">Produtos em destaque</span>
+          <h2>Peças que elevam a experiência da casa com estilo e praticidade</h2>
+          <p>
+            Uma vitrine pensada para mostrar o melhor da loja com foco em valor percebido, estética contemporânea e compra facilitada pelo WhatsApp.
+          </p>
+        </div>
+
+        <div class="products">
+          <article class="product-card">
+            <div class="product-visual one">
+              <span class="pill">Mesa posta</span>
+            </div>
+            <div class="product-content">
+              <h3>Conjunto Terra Serena</h3>
+              <p>Louças e acessórios em tons quentes para compor uma mesa acolhedora e sofisticada.</p>
+              <div class="product-meta">
+                <span>6 peças selecionadas</span>
+                <span class="price">R$ 149</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="product-card">
+            <div class="product-visual two">
+              <span class="pill">Presente ideal</span>
+            </div>
+            <div class="product-content">
+              <h3>Box Aroma da Casa</h3>
+              <p>Kit com vela, difusor e cartão personalizado para presentear com identidade local.</p>
+              <div class="product-meta">
+                <span>Embalagem premium</span>
+                <span class="price">R$ 98</span>
+              </div>
+            </div>
+          </article>
+
+          <article class="product-card">
+            <div class="product-visual three">
+              <span class="pill">Coleção nova</span>
+            </div>
+            <div class="product-content">
+              <h3>Linha Verde Brisa</h3>
+              <p>Objetos decorativos com acabamento natural para ambientes leves e cheios de vida.</p>
+              <div class="product-meta">
+                <span>Estoque limitado</span>
+                <span class="price">R$ 79</span>
+              </div>
+            </div>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section" id="diferenciais">
+      <div class="container">
+        <div class="section-title">
+          <span class="eyebrow">Por que escolher a Casa Aurora</span>
+          <h2>Uma experiência de compra leve, consultiva e alinhada com o ritmo do bairro</h2>
+          <p>
+            Nossa proposta combina proximidade, agilidade e uma curadoria pensada para quem busca uma loja local com apresentação profissional.
+          </p>
+        </div>
+
+        <div class="features">
+          <article class="feature-card">
+            <div class="feature-icon">01</div>
+            <h3>Curadoria com identidade brasileira</h3>
+            <p>Seleção de produtos com linguagem visual atual, materiais aconchegantes e apelo afetivo para presente ou uso próprio.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">02</div>
+            <h3>Atendimento rápido no digital</h3>
+            <p>WhatsApp e chat inteligente para responder dúvidas, sugerir produtos e transformar interesse em venda com menos atrito.</p>
+          </article>
+
+          <article class="feature-card">
+            <div class="feature-icon">03</div>
+            <h3>Entrega local com conveniência</h3>
+            <p>Processo simples para retirada, entrega agendada e acompanhamento próximo, valorizando a relação com a comunidade.</p>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section class="cta" id="contato">
+      <div class="container">
+        <div class="cta-card">
+          <div>
+            <span class="eyebrow">CTA final</span>
+            <h2>Transforme visitas em conversas e conversas em vendas</h2>
+            <p style="margin-top: 12px; color: var(--muted); line-height: 1.7;">
+              Fale agora com a Casa Aurora pelo WhatsApp ou use o assistente no canto da tela para pedir recomendações, horários e informações de entrega.
+            </p>
+          </div>
+          <div class="cta-actions">
+            <a class="button" href="https://wa.me/5511999999999?text=Ol%C3%A1%2C%20quero%20atendimento%20da%20Casa%20Aurora" target="_blank" rel="noopener noreferrer">Pedir atendimento</a>
+            <a class="button-secondary" href="#top">Voltar ao topo</a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container">
+      <p>Casa Aurora • Loja local brasileira com presença digital moderna e atendimento consultivo.</p>
+    </div>
+  </footer>
+
+  <div class="chat-widget">
+    <div class="chat-window" id="chatWindow" aria-hidden="true">
+      <div class="chat-header">
+        <div>
+          <strong>Assistente Casa Aurora</strong>
+          <p>Faça uma pergunta sobre produtos, horários, entrega ou sugestões de presentes.</p>
+        </div>
+        <span class="status-dot" aria-hidden="true"></span>
+      </div>
+
+      <div class="chat-messages" id="chatMessages" aria-live="polite" aria-label="Histórico de mensagens"></div>
+
+      <form class="chat-form" id="chatForm">
+        <label class="sr-only" for="chatInput">Digite sua mensagem</label>
+        <input
+          class="chat-input"
+          id="chatInput"
+          name="message"
+          type="text"
+          placeholder="Digite sua mensagem..."
+          autocomplete="off"
+          maxlength="500"
+        >
+        <button class="chat-send" id="chatSend" type="submit" aria-label="Enviar mensagem">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M21 3 10 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="m21 3-7 18-4-7-7-4 18-7Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </form>
+      <div class="chat-hint">
+        Publique esta pagina no mesmo dominio do backend e exponha o endpoint `/chat`.
+      </div>
+    </div>
+
+    <button class="chat-toggle" id="chatToggle" type="button" aria-label="Abrir chat">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path d="M8 10h8M8 14h5m7-2a9 9 0 1 1-3.59-7.2A9 9 0 0 1 20 12Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
+  </div>
+
+  <script>
+    const CHAT_API_URL = "/chat";
+    const STORAGE_KEYS = {
+      sessionId: "casa-aurora-chat-session-id",
+      messages: "casa-aurora-chat-messages"
+    };
+    const MAX_STORED_MESSAGES = 20;
+    const SEND_COOLDOWN_MS = 1200;
+
+    const chatToggle = document.getElementById("chatToggle");
+    const chatWindow = document.getElementById("chatWindow");
+    const chatMessages = document.getElementById("chatMessages");
+    const chatForm = document.getElementById("chatForm");
+    const chatInput = document.getElementById("chatInput");
+    const chatSend = document.getElementById("chatSend");
+
+    let isChatOpen = false;
+    let isLoading = false;
+    let typingIndicator = null;
+    let lastSendAt = 0;
+
+    function getSessionId() {
+      const existing = localStorage.getItem(STORAGE_KEYS.sessionId);
+      if (existing) {
+        return existing;
+      }
+
+      const sessionId = crypto.randomUUID();
+      localStorage.setItem(STORAGE_KEYS.sessionId, sessionId);
+      return sessionId;
+    }
+
+    function loadMessages() {
+      try {
+        const stored = sessionStorage.getItem(STORAGE_KEYS.messages);
+        const parsed = stored ? JSON.parse(stored) : null;
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      } catch (error) {
+        console.error("Erro ao ler mensagens do localStorage:", error);
+      }
+
+      return [
+        {
+          role: "assistant",
+          content: "Oi! Eu sou o assistente da Casa Aurora. Posso sugerir produtos, informar horarios ou ajudar com entregas."
+        }
+      ];
+    }
+
+    function saveMessages(messages) {
+      const safeMessages = messages.slice(-MAX_STORED_MESSAGES);
+      sessionStorage.setItem(STORAGE_KEYS.messages, JSON.stringify(safeMessages));
+    }
+
+    let messages = loadMessages();
+    getSessionId();
+
+    function renderMessages() {
+      chatMessages.innerHTML = "";
+
+      messages.forEach((message) => {
+        const element = document.createElement("div");
+        element.className = "message " + message.role;
+        element.textContent = message.content;
+        chatMessages.appendChild(element);
+      });
+
+      if (typingIndicator) {
+        chatMessages.appendChild(typingIndicator);
+      }
+
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+
+    function createTypingIndicator() {
+      const wrapper = document.createElement("div");
+      wrapper.className = "message assistant";
+      wrapper.setAttribute("data-typing", "true");
+
+      const dots = document.createElement("div");
+      dots.className = "typing";
+      dots.innerHTML = "<span></span><span></span><span></span>";
+      wrapper.appendChild(dots);
+
+      return wrapper;
+    }
+
+    function setLoading(state) {
+      isLoading = state;
+      chatSend.disabled = state;
+      chatInput.disabled = state;
+      typingIndicator = state ? createTypingIndicator() : null;
+      renderMessages();
+    }
+
+    function appendMessage(role, content, persist = true) {
+      messages.push({ role, content });
+      messages = messages.slice(-MAX_STORED_MESSAGES);
+      if (persist) {
+        saveMessages(messages);
+      }
+      renderMessages();
+    }
+
+    function toggleChat(forceState) {
+      isChatOpen = typeof forceState === "boolean" ? forceState : !isChatOpen;
+      chatWindow.classList.toggle("is-open", isChatOpen);
+      chatWindow.setAttribute("aria-hidden", String(!isChatOpen));
+      chatToggle.setAttribute("aria-label", isChatOpen ? "Fechar chat" : "Abrir chat");
+
+      if (isChatOpen) {
+        window.setTimeout(() => chatInput.focus(), 180);
+      }
+    }
+
+    function getAssistantText(data) {
+      if (!data) return "";
+      if (typeof data === "string") return data;
+      if (typeof data.reply === "string") return data.reply;
+      if (typeof data.message === "string") return data.message;
+      if (typeof data.response === "string") return data.response;
+      if (data.data && typeof data.data.reply === "string") return data.data.reply;
+      return "";
+    }
+
+    function isChatConfigured() {
+      return (
+        CHAT_API_URL &&
+        !CHAT_API_URL.includes("SEU-ENDPOINT-RAILWAY") &&
+        (CHAT_API_URL.startsWith("/") || CHAT_API_URL.startsWith("https://"))
+      );
+    }
+
+    async function sendMessage(text) {
+      const trimmed = text.trim();
+      if (!trimmed || isLoading) {
+        return;
+      }
+
+      if (!isChatConfigured()) {
+        appendMessage(
+          "system",
+          "Configure o endpoint real do chat antes de usar o assistente."
+        );
+        return;
+      }
+
+      if (Date.now() - lastSendAt < SEND_COOLDOWN_MS) {
+        appendMessage(
+          "system",
+          "Aguarde um instante antes de enviar outra mensagem."
+        );
+        return;
+      }
+
+      lastSendAt = Date.now();
+
+      appendMessage("user", trimmed);
+      setLoading(true);
+
+      try {
+        const response = await fetch(CHAT_API_URL, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            sessionId: getSessionId(),
+            message: trimmed
+          })
+        });
+
+        let data = null;
+
+        try {
+          data = await response.json();
+        } catch (parseError) {
+          data = null;
+        }
+
+        if (!response.ok) {
+          const errorMessage = getAssistantText(data) || "Nao foi possivel concluir o atendimento agora. Tente novamente em instantes.";
+          throw new Error(errorMessage);
+        }
+
+        const reply = getAssistantText(data) || "Recebi sua mensagem, mas a resposta da API veio vazia.";
+        appendMessage("assistant", reply);
+      } catch (error) {
+        console.error("Erro ao enviar mensagem:", error);
+        const message =
+          error instanceof TypeError
+            ? "Nao foi possivel conectar ao servidor do chat. Verifique se o endpoint esta publicado, se o CORS esta liberado e se a URL esta correta."
+            : error instanceof Error
+              ? error.message
+              : "Ocorreu um erro inesperado ao falar com o assistente.";
+
+        appendMessage(
+          "system",
+          message
+        );
+      } finally {
+        setLoading(false);
+        chatInput.disabled = false;
+        chatInput.focus();
+      }
+    }
+
+    chatToggle.addEventListener("click", () => toggleChat());
+
+    chatForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const text = chatInput.value.trim();
+      if (!text) {
+        chatInput.focus();
+        return;
+      }
+
+      chatInput.value = "";
+      await sendMessage(text);
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key === "Escape" && isChatOpen) {
+        toggleChat(false);
+      }
+    });
+
+    renderMessages();
+  </script>
+</body>
+</html>
