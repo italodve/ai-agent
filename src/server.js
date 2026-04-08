@@ -71,7 +71,7 @@ app.post('/chat', async (req, res) => {
   }
 });
 
-app.get('*', (req, res, next) => {
+app.get('/{*splat}', (req, res, next) => {
   if (req.path.startsWith('/chat') || req.path.startsWith('/health')) {
     return next();
   }
