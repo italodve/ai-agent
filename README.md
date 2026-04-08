@@ -1,73 +1,74 @@
 # AI Agent
 
-AI Agent powered by Claude, with session memory and ready for Railway deployment.
+Backend de chat com Claude, memória por sessão e pronto para deploy no Railway.
 
 ## Features
 
-- Claude-powered conversational AI via `POST /chat`
-- Per-session conversation memory
-- Same-origin friendly frontend + backend deployment
+- API de chat via `POST /chat`
+- Memória por sessão
 - Rate limiting (20 requests/minute)
-- Input validation (max 1000 characters per message)
+- Validação de entrada (max 1000 caracteres por mensagem)
+- CORS configurável por variável de ambiente
 - Cost control (`max_tokens: 300`)
 
 ## Setup Local
 
-1. Clone the repository:
+1. Clone o repositório:
    ```bash
    git clone https://github.com/italodve/ai-agent.git
    cd ai-agent
    ```
 
-2. Install dependencies:
+2. Instale as dependências:
    ```bash
    npm install
    ```
 
-3. Create the `.env` file from the example:
+3. Crie o `.env` a partir do exemplo:
    ```bash
    cp .env.example .env
    ```
 
-4. Fill in the environment variables in `.env`:
-   - `ANTHROPIC_API_KEY` - your Anthropic API key
-   - `ALLOWED_ORIGIN` - optional origin allowed for cross-origin requests during development
+4. Preencha as variáveis:
+   - `ANTHROPIC_API_KEY` - sua chave da Anthropic
+   - `ALLOWED_ORIGIN` - domínio do front-end autorizado a chamar a API
 
-5. Start the server:
+5. Inicie o servidor:
    ```bash
    npm start
    ```
 
-## Deploy on Railway
+## Deploy no Railway
 
-1. Push this repository to GitHub.
+1. Publique este repositório no GitHub.
+2. Crie um projeto no Railway e conecte este repositório.
+3. Configure as variáveis:
+   - `ANTHROPIC_API_KEY`
+   - `ALLOWED_ORIGIN`
+4. O Railway detecta Node.js e executa `npm start`.
 
-2. Go to [railway.app](https://railway.app) and create a new project.
+## API
 
-3. Select **Deploy from GitHub repo** and connect this repository.
+### Health
 
-4. Add the following environment variables in Railway's dashboard:
-   - `ANTHROPIC_API_KEY` - your Anthropic API key
-   - `ALLOWED_ORIGIN` - optional; only needed if your frontend is hosted on another domain during development
+```
+GET /
+```
 
-   > `PORT` is automatically set by Railway - no need to configure it.
-
-5. Railway will detect Node.js, run `npm install`, and execute `npm start` automatically.
-
-6. To serve the landing page and API on the same domain, place your frontend files inside `public/`.
-   - Example: `public/index.html`
-   - The server will serve `/` from that file when it exists
-   - The frontend can then call `POST /chat` without exposing secrets in the browser
-
-## API Usage
-
-### Health Check
+ou
 
 ```
 GET /health
 ```
 
-Response: `{ "status": "ok", "service": "ai-agent" }`
+Resposta:
+
+```json
+{
+  "status": "ok",
+  "service": "ai-agent"
+}
+```
 
 ### Chat
 
@@ -75,10 +76,12 @@ Response: `{ "status": "ok", "service": "ai-agent" }`
 POST /chat
 ```
 
-**Headers:**
+Headers:
+
 - `Content-Type: application/json`
 
-**Body:**
+Body:
+
 ```json
 {
   "sessionId": "user-123",
@@ -86,29 +89,16 @@ POST /chat
 }
 ```
 
-**Response:**
+Resposta:
+
 ```json
 {
   "reply": "Hello! How can I help you today?"
 }
 ```
 
-### Error Responses
+## Error Responses
 
-| Status | Description |
-|--------|-------------|
-| 400 | Invalid input (missing fields or message too long) |
-| 429 | Rate limit exceeded |
-| 500 | Internal server error |
-
-## Project Structure
-
-```
-src/
-|-- server.js           # Express app, routes, startup
-|-- agent.js            # Claude API integration
-|-- memory.js           # Session memory (Map, Redis-ready)
-|-- middleware/         # Optional middleware extensions
-`-- utils/
-    `-- validation.js   # Input validation
-```
+- `400` input inválido
+- `429` limite de requests excedido
+- `500` erro interno
