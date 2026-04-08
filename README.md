@@ -5,10 +5,11 @@ Backend de chat com Claude, memoria por sessao e pronto para deploy no Railway.
 ## Features
 
 - API de chat via `POST /chat`
+- Endpoint de token temporario via `POST /chat/session`
 - Memoria por sessao
-- Rate limiting (20 requests/minute)
-- Validacao de entrada (max 1000 caracteres por mensagem)
-- CORS configuravel por variavel de ambiente
+- Rate limiting e cooldown por sessao
+- Validacao de entrada
+- CORS por allowlist
 - Limites de memoria por sessao e numero maximo de sessoes em memoria
 - Cost control (`max_tokens: 300`)
 
@@ -33,7 +34,8 @@ Backend de chat com Claude, memoria por sessao e pronto para deploy no Railway.
 4. Preencha as variaveis:
    - `ANTHROPIC_API_KEY` - sua chave da Anthropic
    - `ALLOWED_ORIGIN` - dominio do front-end autorizado a chamar a API
-   - voce pode informar multiplos dominios separados por virgula
+   - `CHAT_SESSION_SECRET` - segredo longo e aleatorio para assinar tokens temporarios do chat
+   - voce pode informar multiplos dominios em `ALLOWED_ORIGIN`, separados por virgula
 
 5. Inicie o servidor:
    ```bash
@@ -47,6 +49,7 @@ Backend de chat com Claude, memoria por sessao e pronto para deploy no Railway.
 3. Configure as variaveis:
    - `ANTHROPIC_API_KEY`
    - `ALLOWED_ORIGIN`
+   - `CHAT_SESSION_SECRET`
 4. O Railway detecta Node.js e executa `npm start`.
 
 ## API
@@ -72,6 +75,33 @@ Resposta:
 }
 ```
 
+### Session Token
+
+```
+POST /chat/session
+```
+
+Headers:
+
+- `Content-Type: application/json`
+
+Body:
+
+```json
+{
+  "sessionId": "user-123"
+}
+```
+
+Resposta:
+
+```json
+{
+  "token": "token-temporario",
+  "expiresInMs": 900000
+}
+```
+
 ### Chat
 
 ```
@@ -81,6 +111,7 @@ POST /chat
 Headers:
 
 - `Content-Type: application/json`
+- `X-Chat-Token: token-temporario`
 
 Body:
 
@@ -102,6 +133,7 @@ Resposta:
 ## Error Responses
 
 - `400` input invalido
+- `401` token invalido ou expirado
 - `403` origin nao permitida
 - `413` payload muito grande
 - `429` limite de requests excedido
