@@ -19,6 +19,10 @@ const SESSION_TOKEN_TTL_MS = 15 * 60 * 1000;
 const SESSION_MESSAGE_COOLDOWN_MS = 1500;
 const MAX_SESSION_ACTIVITY = 1000;
 const sessionActivity = new Map();
+const leadWebhookUrl = (process.env.LEAD_WEBHOOK_URL || '').trim();
+const LEAD_WEBHOOK_TIMEOUT_MS = 5000;
+const MAX_LEAD_FIELDS = 20;
+const MAX_LEAD_FIELD_LENGTH = 200;
 
 const corsOptions = {
   origin(origin, callback) {
@@ -110,6 +114,47 @@ function verifySessionToken(token, sessionId) {
   }
 }
 
+function sanitizeLeadFields(rawFields) {
+  if (!Array.isArray(rawFields)) {
+    return null;
+  }
+
+  const fields = [];
+  for (const item of rawFields.slice(0, MAX_LEAD_FIELDS)) {
+    if (!item || typeof item.label !== 'string' || typeof item.value !== 'string') {
+      continue;
+    }
+
+    const label = item.label.trim().slice(0, MAX_LEAD_FIELD_LENGTH);
+    const value = item.value.trim().slice(0, MAX_LEAD_FIELD_LENGTH);
+    if (label && value) {
+      fields.push({ label, value });
+    }
+  }
+
+  return fields.length > 0 ? fields : null;
+}
+
+async function forwardLeadToWebhook(payload) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), LEAD_WEBHOOK_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(leadWebhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Webhook responded with ${response.status}`);
+    }
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 function enforceSessionCooldown(sessionId) {
   const now = Date.now();
   const lastActivityAt = sessionActivity.get(sessionId) || 0;
@@ -168,6 +213,14 @@ const chatLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: 'Too many chat requests, please try again later' },
+});
+
+const leadLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many lead requests, please try again later' },
 });
 
 app.use((err, _req, res, next) => {
@@ -237,6 +290,47 @@ app.post('/chat', requireTrustedOrigin, chatLimiter, async (req, res) => {
     }
 
     return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+app.post('/lead', requireTrustedOrigin, leadLimiter, async (req, res) => {
+  const sessionValidation = validateSessionId(req.body?.sessionId);
+  if (!sessionValidation.valid) {
+    return res.status(400).json({ error: sessionValidation.error });
+  }
+
+  const sessionId = req.body.sessionId;
+  const sessionToken = req.get('x-chat-token');
+  if (!verifySessionToken(sessionToken, sessionId)) {
+    return res.status(401).json({ error: 'Invalid or expired session token' });
+  }
+
+  const fields = sanitizeLeadFields(req.body?.lead);
+  if (!fields) {
+    return res.status(400).json({ error: 'lead must be a non-empty array of { label, value }' });
+  }
+
+  if (!leadWebhookUrl) {
+    return res.status(503).json({ error: 'Lead storage is not configured' });
+  }
+
+  const source =
+    typeof req.body?.source === 'string' ? req.body.source.trim().slice(0, MAX_LEAD_FIELD_LENGTH) : undefined;
+
+  const payload = {
+    sessionId,
+    fields,
+    source: source || undefined,
+    receivedAt: new Date().toISOString(),
+  };
+
+  try {
+    await forwardLeadToWebhook(payload);
+    res.setHeader('Cache-Control', 'no-store');
+    return res.status(202).json({ status: 'accepted' });
+  } catch (err) {
+    console.error('Lead webhook error:', err.message);
+    return res.status(502).json({ error: 'Failed to store lead' });
   }
 });
 
