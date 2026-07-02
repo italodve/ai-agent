@@ -268,6 +268,11 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok', service: 'ai-agent' });
 });
 
+// Atalho: /leads leva ao painel de imóveis/leads.
+app.get('/leads', (_req, res) => {
+  res.redirect('/painel/');
+});
+
 app.post('/chat/session', requireTrustedOrigin, sessionLimiter, (req, res) => {
   const sessionValidation = validateSessionId(req.body?.sessionId);
   if (!sessionValidation.valid) {
