@@ -6,7 +6,7 @@ repositório, com **um único deploy no Railway**:
 | Rota | O que é | Projeto original |
 | --- | --- | --- |
 | `/` | Site público do consultor imobiliário (Deivid Vilela) | [`site-imob`](https://github.com/italodve/site-imob) |
-| `/painel` | Painel de cadastro de imóveis e gestão de leads | [`SIteLeads`](https://github.com/italodve/siteleads) |
+| `/painel` | Painel de cadastro de imóveis e gestão de leads (protegido por login) | [`SIteLeads`](https://github.com/italodve/siteleads) |
 | `/chat`, `/chat/session`, `/lead`, `/health` | API do agente de IA (Claude) | [`ai-agent`](https://github.com/italodve/ai-agent) |
 
 ## Por que essa stack
@@ -52,6 +52,8 @@ npm start
    - `CHAT_SESSION_SECRET` — segredo longo e aleatório
    - `LEAD_WEBHOOK_URL` — URL do Apps Script que grava os leads na planilha
      (opcional; sem ela o `/lead` responde 503)
+   - `PAINEL_USER` / `PAINEL_PASSWORD` — credenciais de acesso ao painel
+     (`PAINEL_PASSWORD` é obrigatória; sem ela o painel fica bloqueado)
    - `ALLOWED_ORIGIN` — **opcional**, só se algum outro domínio externo for
      chamar a API (o site e o painel deste deploy já são aceitos)
 3. O Railway detecta Node.js e usa o `railway.json` (start `npm start`,

@@ -75,6 +75,7 @@ h1, h2, h3 { margin: 0; }
   font-size: 13px;
 }
 .side-foot:hover { color: #e7ebef; }
+.side-logout { margin-top: 0; padding-top: 10px; text-decoration: none; }
 .side-foot-gear { margin-left: auto; opacity: 0.7; }
 .conn-dot { width: 9px; height: 9px; border-radius: 50%; background: #c9a227; flex: 0 0 auto; }
 .conn-dot.is-online { background: #54a06a; }

@@ -11,7 +11,9 @@ import { chat } from './agent.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
+const rootDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..');
+const publicDir = path.join(rootDir, 'public');
+const viewsDir = path.join(rootDir, 'views');
 const memory = new SessionMemory();
 const sessionTokenSecret = process.env.CHAT_SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 const allowedOrigins = (process.env.ALLOWED_ORIGIN || '')
@@ -23,6 +25,10 @@ const SESSION_MESSAGE_COOLDOWN_MS = 1500;
 const MAX_SESSION_ACTIVITY = 1000;
 const sessionActivity = new Map();
 const leadWebhookUrl = (process.env.LEAD_WEBHOOK_URL || '').trim();
+const painelUser = (process.env.PAINEL_USER || 'admin').trim();
+const painelPassword = (process.env.PAINEL_PASSWORD || '').trim();
+const PAINEL_SESSION_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+const PAINEL_COOKIE_NAME = 'painel_session';
 const LEAD_WEBHOOK_TIMEOUT_MS = 5000;
 const MAX_LEAD_FIELDS = 20;
 const MAX_LEAD_FIELD_LENGTH = 200;
@@ -125,6 +131,89 @@ function verifySessionToken(token, sessionId) {
   }
 }
 
+// ---- Login do painel -------------------------------------------------------
+// Credenciais via PAINEL_USER / PAINEL_PASSWORD; sessão em cookie HttpOnly
+// assinado com HMAC (mesmo esquema dos tokens de chat).
+
+function safeStringEquals(a, b) {
+  const hashA = crypto.createHash('sha256').update(String(a)).digest();
+  const hashB = crypto.createHash('sha256').update(String(b)).digest();
+  return crypto.timingSafeEqual(hashA, hashB);
+}
+
+function signPainelSession() {
+  const payload = JSON.stringify({ scope: 'painel', exp: Date.now() + PAINEL_SESSION_TTL_MS });
+  const encodedPayload = Buffer.from(payload).toString('base64url');
+  const signature = crypto
+    .createHmac('sha256', sessionTokenSecret)
+    .update(`painel.${encodedPayload}`)
+    .digest('base64url');
+
+  return `${encodedPayload}.${signature}`;
+}
+
+function verifyPainelSession(token) {
+  if (!token || typeof token !== 'string' || !token.includes('.')) {
+    return false;
+  }
+
+  const [encodedPayload, providedSignature] = token.split('.');
+  const expectedSignature = crypto
+    .createHmac('sha256', sessionTokenSecret)
+    .update(`painel.${encodedPayload}`)
+    .digest('base64url');
+
+  const providedBuffer = Buffer.from(providedSignature);
+  const expectedBuffer = Buffer.from(expectedSignature);
+  if (
+    providedBuffer.length !== expectedBuffer.length ||
+    !crypto.timingSafeEqual(providedBuffer, expectedBuffer)
+  ) {
+    return false;
+  }
+
+  try {
+    const payload = JSON.parse(Buffer.from(encodedPayload, 'base64url').toString('utf8'));
+    return payload.scope === 'painel' && Number(payload.exp) > Date.now();
+  } catch {
+    return false;
+  }
+}
+
+function getCookie(req, name) {
+  const header = req.get('cookie');
+  if (!header) {
+    return '';
+  }
+
+  for (const part of header.split(';')) {
+    const [key, ...rest] = part.trim().split('=');
+    if (key === name) {
+      return decodeURIComponent(rest.join('='));
+    }
+  }
+
+  return '';
+}
+
+function painelSessionCookie(req, value, maxAgeMs) {
+  const attributes = [
+    `${PAINEL_COOKIE_NAME}=${value}`,
+    'Path=/',
+    'HttpOnly',
+    'SameSite=Lax',
+    `Max-Age=${Math.floor(maxAgeMs / 1000)}`,
+  ];
+  if (req.secure) {
+    attributes.push('Secure');
+  }
+  return attributes.join('; ');
+}
+
+function isPainelAuthenticated(req) {
+  return verifyPainelSession(getCookie(req, PAINEL_COOKIE_NAME));
+}
+
 function sanitizeLeadFields(rawFields) {
   if (!Array.isArray(rawFields)) {
     return null;
@@ -196,6 +285,63 @@ app.use((req, res, next) => {
   res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   next();
+});
+
+// ---- Rotas de login do painel (antes do static, que serve /painel) --------
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 15,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many login attempts, please try again later' },
+});
+
+app.get('/painel/login', (req, res) => {
+  if (isPainelAuthenticated(req)) {
+    return res.redirect('/painel/');
+  }
+
+  res.setHeader('Cache-Control', 'no-store');
+  return res.sendFile(path.join(viewsDir, 'login.html'));
+});
+
+app.post(
+  '/painel/login',
+  loginLimiter,
+  express.urlencoded({ extended: false, limit: '2kb' }),
+  (req, res) => {
+    if (!painelPassword) {
+      return res
+        .status(503)
+        .send('Login do painel não configurado: defina PAINEL_PASSWORD nas variáveis de ambiente.');
+    }
+
+    const user = typeof req.body?.usuario === 'string' ? req.body.usuario.trim() : '';
+    const password = typeof req.body?.senha === 'string' ? req.body.senha : '';
+    const userOk = safeStringEquals(user, painelUser);
+    const passwordOk = safeStringEquals(password, painelPassword);
+
+    if (!userOk || !passwordOk) {
+      return res.redirect('/painel/login?erro=1');
+    }
+
+    res.setHeader('Set-Cookie', painelSessionCookie(req, signPainelSession(), PAINEL_SESSION_TTL_MS));
+    return res.redirect('/painel/');
+  }
+);
+
+app.get('/painel/logout', (req, res) => {
+  res.setHeader('Set-Cookie', painelSessionCookie(req, '', 0));
+  return res.redirect('/painel/login');
+});
+
+// Tudo o mais sob /painel exige sessão válida.
+app.use('/painel', (req, res, next) => {
+  if (isPainelAuthenticated(req)) {
+    return next();
+  }
+
+  return res.redirect('/painel/login');
 });
 
 // Site público em / e painel em /painel, servidos antes do rate limiter
