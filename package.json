@@ -1,7 +1,7 @@
 {
-  "name": "ai-agent",
+  "name": "imob-monorepo",
   "version": "1.0.0",
-  "description": "AI Agent powered by Claude, ready for Railway deployment",
+  "description": "Monorepo: site publico + painel de imoveis/leads + backend de chat com Claude, deploy unico no Railway",
   "type": "module",
   "main": "src/server.js",
   "scripts": {

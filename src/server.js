@@ -1,5 +1,7 @@
 import 'dotenv/config';
 import crypto from 'node:crypto';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
@@ -9,6 +11,7 @@ import { chat } from './agent.js';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const publicDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'public');
 const memory = new SessionMemory();
 const sessionTokenSecret = process.env.CHAT_SESSION_SECRET || crypto.randomBytes(32).toString('hex');
 const allowedOrigins = (process.env.ALLOWED_ORIGIN || '')
@@ -24,21 +27,33 @@ const LEAD_WEBHOOK_TIMEOUT_MS = 5000;
 const MAX_LEAD_FIELDS = 20;
 const MAX_LEAD_FIELD_LENGTH = 200;
 
-const corsOptions = {
-  origin(origin, callback) {
-    if (!origin) {
-      return callback(null, true);
-    }
+// O front-end (site + painel) é servido por este mesmo servidor, então
+// requisições same-origin são sempre aceitas; ALLOWED_ORIGIN vira uma
+// allowlist opcional para domínios externos extras.
+function isTrustedOrigin(req, origin) {
+  if (!origin) {
+    return false;
+  }
 
-    if (allowedOrigins.length > 0 && allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    }
+  if (origin === `${req.protocol}://${req.get('host')}`) {
+    return true;
+  }
 
-    return callback(new Error('Origin not allowed by CORS'));
-  },
-  methods: ['GET', 'POST'],
-  allowedHeaders: ['Content-Type', 'X-Chat-Token'],
-  maxAge: 600,
+  return allowedOrigins.includes(origin);
+}
+
+const corsOptionsDelegate = (req, callback) => {
+  const origin = req.get('origin');
+  if (!origin || isTrustedOrigin(req, origin)) {
+    return callback(null, {
+      origin: true,
+      methods: ['GET', 'POST'],
+      allowedHeaders: ['Content-Type', 'X-Chat-Token'],
+      maxAge: 600,
+    });
+  }
+
+  return callback(new Error('Origin not allowed by CORS'));
 };
 
 function getRequestOrigin(req) {
@@ -60,12 +75,8 @@ function getRequestOrigin(req) {
 }
 
 function requireTrustedOrigin(req, res, next) {
-  if (allowedOrigins.length === 0) {
-    return res.status(503).json({ error: 'Server origin policy is not configured' });
-  }
-
   const requestOrigin = getRequestOrigin(req);
-  if (!requestOrigin || !allowedOrigins.includes(requestOrigin)) {
+  if (!isTrustedOrigin(req, requestOrigin)) {
     return res.status(403).json({ error: 'Origin not allowed' });
   }
 
@@ -177,8 +188,7 @@ function enforceSessionCooldown(sessionId) {
 }
 
 app.set('trust proxy', 1);
-app.use(cors(corsOptions));
-app.use(express.json({ limit: '8kb' }));
+app.use(cors(corsOptionsDelegate));
 app.use((req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('X-Frame-Options', 'DENY');
@@ -187,6 +197,21 @@ app.use((req, res, next) => {
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   next();
 });
+
+// Site público em / e painel em /painel, servidos antes do rate limiter
+// para que assets (imagens, css, js) não consumam a cota da API.
+app.use(
+  express.static(publicDir, {
+    setHeaders(res, filePath) {
+      const cacheControl = filePath.endsWith('.html')
+        ? 'no-cache'
+        : 'public, max-age=86400';
+      res.setHeader('Cache-Control', cacheControl);
+    },
+  })
+);
+
+app.use(express.json({ limit: '8kb' }));
 
 const limiter = rateLimit({
   windowMs: 60 * 1000,
@@ -240,10 +265,6 @@ app.use((err, _req, res, next) => {
 });
 
 app.get('/health', (_req, res) => {
-  res.json({ status: 'ok', service: 'ai-agent' });
-});
-
-app.get('/', (_req, res) => {
   res.json({ status: 'ok', service: 'ai-agent' });
 });
 

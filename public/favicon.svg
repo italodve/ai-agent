@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Deivid Vilela">
+  <rect width="64" height="64" rx="14" fill="#0f1a2e"/>
+  <g fill="none" stroke="#d4a574" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M14 30 32 15 50 30"/>
+    <path d="M19 27 19 49 45 49 45 27"/>
+    <path d="M28 49 28 36 36 36 36 49"/>
+  </g>
+</svg>
