@@ -37,8 +37,30 @@ const MAX_LEAD_FIELD_LENGTH = 200;
 // requisições same-origin são sempre aceitas; ALLOWED_ORIGIN vira uma
 // allowlist opcional para domínios externos extras.
 // A comparação é feita pelo HOST (não pela origin completa) porque atrás do
-// proxy da Railway o protocolo reconstruído (req.protocol) pode divergir do
-// esquema real (https), fazendo `https://dominio` !== `http://dominio`.
+// proxy da Railway tanto o protocolo (http vs https) quanto o header Host
+// podem divergir do domínio público que o browser envia no Origin. Por isso
+// reunimos todos os hosts que o proxy pode informar.
+function requestHosts(req) {
+  const hosts = new Set();
+  const add = (value) => {
+    if (value) {
+      hosts.add(String(value).trim().toLowerCase());
+    }
+  };
+
+  add(req.get('host'));
+  add(req.hostname); // respeita X-Forwarded-Host quando trust proxy está ativo
+  const forwardedHost = req.get('x-forwarded-host');
+  if (forwardedHost) {
+    for (const part of forwardedHost.split(',')) {
+      add(part);
+    }
+  }
+
+  hosts.delete('');
+  return hosts;
+}
+
 function isTrustedOrigin(req, origin) {
   if (!origin) {
     return false;
@@ -46,13 +68,18 @@ function isTrustedOrigin(req, origin) {
 
   let originHost;
   try {
-    originHost = new URL(origin).host;
+    originHost = new URL(origin).host.toLowerCase();
   } catch {
     return false;
   }
 
-  if (originHost === req.get('host')) {
-    return true;
+  // Também compara ignorando a porta, cobrindo casos em que um lado inclui
+  // :443/:80 e o outro não.
+  const originHostname = originHost.split(':')[0];
+  for (const host of requestHosts(req)) {
+    if (host === originHost || host.split(':')[0] === originHostname) {
+      return true;
+    }
   }
 
   return allowedOrigins.includes(origin);
