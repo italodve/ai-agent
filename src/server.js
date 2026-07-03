@@ -36,12 +36,22 @@ const MAX_LEAD_FIELD_LENGTH = 200;
 // O front-end (site + painel) é servido por este mesmo servidor, então
 // requisições same-origin são sempre aceitas; ALLOWED_ORIGIN vira uma
 // allowlist opcional para domínios externos extras.
+// A comparação é feita pelo HOST (não pela origin completa) porque atrás do
+// proxy da Railway o protocolo reconstruído (req.protocol) pode divergir do
+// esquema real (https), fazendo `https://dominio` !== `http://dominio`.
 function isTrustedOrigin(req, origin) {
   if (!origin) {
     return false;
   }
 
-  if (origin === `${req.protocol}://${req.get('host')}`) {
+  let originHost;
+  try {
+    originHost = new URL(origin).host;
+  } catch {
+    return false;
+  }
+
+  if (originHost === req.get('host')) {
     return true;
   }
 
