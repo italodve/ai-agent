@@ -9,7 +9,8 @@
  * 1. Abra a planilha de leads no Google Sheets.
  * 2. Crie duas abas com estes nomes exatos: "Leads" e "Imoveis".
  *    - "Leads": colunas A=Data, B=Sessão, C=Dados, D=Origem (já alimentada
- *      pelo webhook do ai-agent).
+ *      pelo webhook do ai-agent). A coluna E=Status é preenchida pelo painel
+ *      (novo / aquecido / vendido) — não precisa criar cabeçalho.
  *    - "Imoveis": deixe vazia; o cabeçalho é criado automaticamente.
  * 3. Extensões > Apps Script, apague tudo e cole este arquivo.
  * 4. Implantar > Nova implantação > App da Web > acesso "Qualquer pessoa".
@@ -35,6 +36,7 @@ function doPost(e) {
   if (body.action === "saveProperty") return json(saveProperty(body.property));
   if (body.action === "deleteProperty") return json(deleteProperty(body.id));
   if (body.action === "deleteLead") return json(deleteLead(body.id));
+  if (body.action === "setLeadStatus") return json(setLeadStatus(body.id, body.status));
   return json({ ok: false, error: "ação desconhecida" });
 }
 
@@ -47,11 +49,44 @@ function sheet(name) {
   return ss.getSheetByName(name) || ss.insertSheet(name);
 }
 
+var LEAD_STATUSES = ["novo", "aquecido", "vendido"];
+
+// Aceita os status atuais e converte os antigos; devolve "" se não reconhecer.
+function normalizeLeadStatus(value) {
+  var s = String(value || "").toLowerCase().trim();
+  if (LEAD_STATUSES.indexOf(s) >= 0) return s;
+  if (s === "contatado") return "aquecido";
+  if (s === "fechado") return "vendido";
+  return "";
+}
+
 function readLeads() {
   const rows = sheet(LEADS_SHEET).getDataRange().getValues();
   return rows.map(function (r, i) {
-    return { id: (r[1] || "row") + "-" + i, date: String(r[0] || ""), data: String(r[2] || r[1] || ""), source: String(r[3] || "") };
+    return {
+      id: (r[1] || "row") + "-" + i,
+      date: String(r[0] || ""),
+      data: String(r[2] || r[1] || ""),
+      source: String(r[3] || ""),
+      status: normalizeLeadStatus(r[4])
+    };
   });
+}
+
+// Grava o status do lead na coluna E, para todos os dispositivos verem.
+function setLeadStatus(id, status) {
+  const normalized = normalizeLeadStatus(status);
+  if (!normalized) return { ok: false, error: "status inválido" };
+  const sh = sheet(LEADS_SHEET);
+  const rows = sh.getDataRange().getValues();
+  for (var i = 0; i < rows.length; i++) {
+    var rowId = (rows[i][1] || "row") + "-" + i;
+    if (rowId === id) {
+      sh.getRange(i + 1, 5).setValue(normalized);
+      return { ok: true, status: normalized };
+    }
+  }
+  return { ok: false, error: "não encontrado" };
 }
 
 // Remove a linha do lead correspondente ao id (formato "<sessão>-<índice da linha>",

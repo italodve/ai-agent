@@ -25,9 +25,19 @@ const LEAD_STATUS_LABEL = { novo: "Lead novo", aquecido: "Lead aquecido", vendid
 // Compatibilidade com status antigos salvos no navegador.
 const LEAD_STATUS_ALIASES = { contatado: "aquecido", fechado: "vendido", descartado: "novo" };
 
+const normalizeLeadStatus = (value) => {
+  const s = String(value || "").toLowerCase().trim();
+  if (LEAD_STATUSES.includes(s)) return s;
+  return LEAD_STATUS_ALIASES[s] || "";
+};
+
+// Status guardado neste navegador — usado no modo local e como reserva
+// enquanto a planilha ainda não tem status gravado para o lead.
+const storedLeadStatus = (id) => normalizeLeadStatus(state.leadStatus[id]) || "novo";
+
 const leadStatusOf = (id) => {
-  const raw = state.leadStatus[id] || "novo";
-  return LEAD_STATUS_ALIASES[raw] || raw;
+  const lead = state.leads.find((l) => l.id === id);
+  return lead ? lead.status : storedLeadStatus(id);
 };
 
 /* ---------- utilidades ---------- */
@@ -113,7 +123,8 @@ const toast = (message) => {
 const state = {
   properties: [],
   leads: [],
-  leadStatus: readStore(STORE_LEAD_STATUS, {})
+  leadStatus: readStore(STORE_LEAD_STATUS, {}),
+  isDraggingLead: false
 };
 
 /* ---------- camada de dados: LEADS ---------- */
@@ -122,11 +133,15 @@ const state = {
 async function fetchLeadsFromSheet() {
   const removed = readStore(STORE_LEAD_REMOVED, []);
 
+  // O status gravado na planilha (coluna E) tem prioridade; se a planilha
+  // ainda não tiver status para o lead, vale o guardado neste navegador.
+  const withStatus = (l) => ({ ...l, status: normalizeLeadStatus(l.status) || storedLeadStatus(l.id) });
+
   if (CONFIG.WEB_APP_URL) {
     const res = await fetch(`${CONFIG.WEB_APP_URL}?action=leads`);
     if (!res.ok) throw new Error(`web app ${res.status}`);
     const leads = await res.json();
-    return leads.filter((l) => !removed.includes(l.id));
+    return leads.filter((l) => !removed.includes(l.id)).map(withStatus);
   }
 
   const url = `https://docs.google.com/spreadsheets/d/${CONFIG.SHEET_ID}/gviz/tq?tqx=out:json&sheet=${encodeURIComponent(
@@ -144,10 +159,39 @@ async function fetchLeadsFromSheet() {
         id: `${cells[1] || "row"}-${index}`,
         date: cells[0] || "",
         data: cells[2] || cells[1] || "",
-        source: cells[3] || ""
+        source: cells[3] || "",
+        status: cells[4] || ""
       };
     })
-    .filter((l) => !removed.includes(l.id));
+    .filter((l) => !removed.includes(l.id))
+    .map(withStatus);
+}
+
+// Salva o status do lead em tempo real: atualiza a tela na hora, guarda uma
+// cópia neste navegador e, em modo nuvem, grava na coluna E da planilha —
+// assim o status aparece igual em qualquer dispositivo.
+async function persistLeadStatus(id, status) {
+  if (!id || !LEAD_STATUSES.includes(status)) return;
+  if (leadStatusOf(id) === status) return;
+
+  const lead = state.leads.find((l) => l.id === id);
+  if (lead) lead.status = status;
+  state.leadStatus[id] = status;
+  writeStore(STORE_LEAD_STATUS, state.leadStatus);
+  renderOverview();
+  renderLeads();
+
+  if (!CONFIG.WEB_APP_URL) return;
+  try {
+    const res = await fetch(CONFIG.WEB_APP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "setLeadStatus", id, status })
+    });
+    if (!res.ok) throw new Error(`web app ${res.status}`);
+  } catch {
+    toast("Não deu para gravar o status na planilha — ficou salvo só neste navegador.");
+  }
 }
 
 // Remove um lead: apaga na planilha (via Apps Script, se configurado) e
@@ -228,8 +272,9 @@ async function loadAll() {
     state.leads = await fetchLeadsFromSheet();
     setConnection(true);
   } catch (err) {
+    // Mantém os leads já carregados: uma falha passageira de rede (inclusive
+    // na atualização automática) não deve esvaziar o painel.
     console.warn("Falha ao ler leads da planilha:", err.message);
-    state.leads = [];
     setConnection(false);
   }
   renderAll();
@@ -251,7 +296,7 @@ function setConnection(online) {
 function renderOverview() {
   const props = state.properties;
   const available = props.filter((p) => p.status === "Disponível").length;
-  const newLeads = state.leads.filter((l) => leadStatusOf(l.id) === "novo").length;
+  const newLeads = state.leads.filter((l) => l.status === "novo").length;
 
   $('[data-kpi="properties"]').textContent = props.length;
   $('[data-kpi="available"]').textContent = available;
@@ -282,7 +327,7 @@ function renderPipeline() {
   }
 
   board.innerHTML = LEAD_STATUSES.map((status) => {
-    const leads = state.leads.filter((l) => leadStatusOf(l.id) === status);
+    const leads = state.leads.filter((l) => l.status === status);
     const cards = leads
       .map((l) => {
         const fields = parseLeadFields(l.data);
@@ -363,9 +408,8 @@ function renderLeads() {
   const tbody = $("[data-lead-rows]");
 
   const list = state.leads.filter((l) => {
-    const status = leadStatusOf(l.id);
     const matchTerm = !term || [l.data, l.source, l.date].some((v) => String(v || "").toLowerCase().includes(term));
-    const matchStatus = !filter || status === filter;
+    const matchStatus = !filter || l.status === filter;
     return matchTerm && matchStatus;
   });
 
@@ -373,7 +417,7 @@ function renderLeads() {
 
   tbody.innerHTML = list
     .map((l) => {
-      const status = leadStatusOf(l.id);
+      const status = l.status;
       const options = LEAD_STATUSES.map(
         (s) => `<option value="${s}" ${s === status ? "selected" : ""}>${LEAD_STATUS_LABEL[s]}</option>`
       ).join("");
@@ -504,34 +548,26 @@ function bindEvents() {
   const onLeadStatusChange = (e) => {
     const id = e.target.getAttribute("data-lead-status");
     if (!id) return;
-    state.leadStatus[id] = e.target.value;
-    writeStore(STORE_LEAD_STATUS, state.leadStatus);
-    renderOverview();
-    renderLeads();
+    persistLeadStatus(id, e.target.value);
   };
   $("[data-lead-rows]").addEventListener("change", onLeadStatusChange);
   const pipeline = $("[data-pipeline]");
   pipeline.addEventListener("change", onLeadStatusChange);
   pipeline.addEventListener("click", onLeadDeleteClick);
 
-  const setLeadStatus = (id, status) => {
-    if (!id || !LEAD_STATUSES.includes(status)) return;
-    if (leadStatusOf(id) === status) return;
-    state.leadStatus[id] = status;
-    writeStore(STORE_LEAD_STATUS, state.leadStatus);
-    renderOverview();
-    renderLeads();
-  };
-
   // Arrastar leads entre as colunas do funil.
   pipeline.addEventListener("dragstart", (e) => {
     const card = e.target.closest(".pl-card");
     if (!card) return;
+    state.isDraggingLead = true;
     e.dataTransfer.setData("text/plain", card.dataset.leadId);
     e.dataTransfer.effectAllowed = "move";
     card.classList.add("is-dragging");
   });
-  pipeline.addEventListener("dragend", (e) => e.target.closest(".pl-card")?.classList.remove("is-dragging"));
+  pipeline.addEventListener("dragend", (e) => {
+    state.isDraggingLead = false;
+    e.target.closest(".pl-card")?.classList.remove("is-dragging");
+  });
   pipeline.addEventListener("dragover", (e) => {
     const col = e.target.closest(".pl-col");
     if (!col) return;
@@ -542,11 +578,12 @@ function bindEvents() {
     if (!pipeline.contains(e.relatedTarget)) $$(".pl-col").forEach((c) => c.classList.remove("is-drop"));
   });
   pipeline.addEventListener("drop", (e) => {
+    state.isDraggingLead = false;
     const col = e.target.closest(".pl-col");
     $$(".pl-col").forEach((c) => c.classList.remove("is-drop"));
     if (!col) return;
     e.preventDefault();
-    setLeadStatus(e.dataTransfer.getData("text/plain"), col.dataset.status);
+    persistLeadStatus(e.dataTransfer.getData("text/plain"), col.dataset.status);
   });
 
   $("[data-export-properties]").addEventListener("click", () => {
@@ -557,7 +594,7 @@ function bindEvents() {
 
   $("[data-export-leads]").addEventListener("click", () => {
     const header = ["Data", "Dados", "Origem", "Status"];
-    const rows = state.leads.map((l) => [l.date, l.data, l.source, LEAD_STATUS_LABEL[leadStatusOf(l.id)]]);
+    const rows = state.leads.map((l) => [l.date, l.data, l.source, LEAD_STATUS_LABEL[l.status]]);
     downloadCsv("leads-mf.csv", [header, ...rows]);
   });
 }
@@ -599,6 +636,21 @@ function bindSettings() {
     toast("Voltou ao modo local.");
   });
 }
+
+/* ---------- atualização em tempo real ---------- */
+// Recarrega leads e imóveis periodicamente: leads novos vindos do chat e
+// mudanças de status feitas em outro dispositivo aparecem sem precisar de F5.
+// Pausa quando a aba está em segundo plano, durante um arraste no funil, com
+// modal aberto ou com um campo/select em uso, para não atrapalhar o corretor.
+const AUTO_REFRESH_MS = 15000;
+setInterval(() => {
+  const settingsModal = $("[data-settings-modal]");
+  const modalOpen = !modal.hidden || (settingsModal && !settingsModal.hidden);
+  const active = document.activeElement;
+  const interacting = active && ["SELECT", "INPUT", "TEXTAREA"].includes(active.tagName);
+  if (document.hidden || state.isDraggingLead || modalOpen || interacting) return;
+  loadAll();
+}, AUTO_REFRESH_MS);
 
 /* ---------- init ---------- */
 bindEvents();

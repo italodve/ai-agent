@@ -6,7 +6,7 @@ Dashboard web (HTML/CSS/JS puro, sem build) para **cadastrar casas/apartamentos*
 
 - **Visão geral**: indicadores (imóveis, disponíveis, total de leads, leads novos), gráfico de imóveis por status e leads recentes.
 - **Imóveis**: cadastro, edição e exclusão de imóveis (tipo, finalidade, preço, bairro, cidade, quartos, banheiros, vagas, área, foto, descrição), com busca, filtro por status e exportação CSV.
-- **Leads**: tabela com os leads lidos da planilha, busca, filtro e mudança de status (novo / contatado / fechado / descartado), com exportação CSV.
+- **Leads**: tabela e funil com os leads lidos da planilha, busca, filtro e mudança de status (**lead novo / aquecido / vendido**) com exportação CSV. Em modo nuvem, o status é gravado **em tempo real na coluna E da aba `Leads`** — todos os dispositivos veem o mesmo status. O painel também se atualiza sozinho a cada 15 segundos, então leads novos capturados pelo chat aparecem sem recarregar a página.
 
 ## Como funciona (dois modos)
 
@@ -14,7 +14,7 @@ Dashboard web (HTML/CSS/JS puro, sem build) para **cadastrar casas/apartamentos*
 - Os **leads** são lidos direto da planilha do Google (endpoint `gviz`). Basta a planilha estar compartilhada como **"Qualquer pessoa com o link pode ver"**.
 - Os **imóveis** ficam salvos **neste navegador** (localStorage) e o status dos leads também.
 
-> Limitação: neste modo os imóveis ficam só neste navegador e **não aparecem no site público**. Para publicá-los, use o modo nuvem.
+> Limitação: neste modo os imóveis ficam só neste navegador e **não aparecem no site público**, e o status dos leads não sincroniza entre dispositivos. Para publicá-los e ter o status em tempo real na planilha, use o modo nuvem.
 
 ### Modo nuvem (recomendado, necessário para o site público)
 Salva os imóveis na própria planilha (aba `Imoveis`), de onde o **site público**
