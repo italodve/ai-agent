@@ -33,13 +33,21 @@ const LEAD_WEBHOOK_TIMEOUT_MS = 5000;
 const MAX_LEAD_FIELDS = 20;
 const MAX_LEAD_FIELD_LENGTH = 200;
 
-// O front-end (site + painel) é servido por este mesmo servidor, então
-// requisições same-origin são sempre aceitas; ALLOWED_ORIGIN vira uma
-// allowlist opcional para domínios externos extras.
+// O front-end (site + painel) é servido por este mesmo servidor. isTrustedOrigin
+// decide apenas quem recebe headers CORS (liberando leitura cross-origin):
+// requisições cujo Origin bate com algum host da própria requisição, mais a
+// allowlist opcional ALLOWED_ORIGIN para domínios externos.
 // A comparação é feita pelo HOST (não pela origin completa) porque atrás do
 // proxy da Railway tanto o protocolo (http vs https) quanto o header Host
 // podem divergir do domínio público que o browser envia no Origin. Por isso
 // reunimos todos os hosts que o proxy pode informar.
+// IMPORTANTE: nenhuma requisição é BLOQUEADA por essa comparação — atrás de
+// proxies o Host visto pelo app pode divergir do Origin do browser mesmo em
+// requisições legítimas (foi o que quebrava o login do painel na Railway).
+// Origem não confiável apenas não recebe headers CORS, o que já impede
+// browsers de outros sites de lerem respostas ou passarem no preflight; a
+// proteção real dos endpoints /chat e /lead é o token de sessão assinado
+// (X-Chat-Token), e a do painel é o login + cookie SameSite.
 function requestHosts(req) {
   const hosts = new Set();
   const add = (value) => {
@@ -87,7 +95,7 @@ function isTrustedOrigin(req, origin) {
 
 const corsOptionsDelegate = (req, callback) => {
   const origin = req.get('origin');
-  if (!origin || isTrustedOrigin(req, origin)) {
+  if (origin && isTrustedOrigin(req, origin)) {
     return callback(null, {
       origin: true,
       methods: ['GET', 'POST'],
@@ -96,35 +104,10 @@ const corsOptionsDelegate = (req, callback) => {
     });
   }
 
-  return callback(new Error('Origin not allowed by CORS'));
+  // Sem headers CORS a requisição segue normalmente (same-origin não precisa
+  // deles), mas browsers de outros sites não conseguem ler a resposta.
+  return callback(null, { origin: false });
 };
-
-function getRequestOrigin(req) {
-  const originHeader = req.get('origin');
-  if (originHeader) {
-    return originHeader;
-  }
-
-  const refererHeader = req.get('referer');
-  if (!refererHeader) {
-    return '';
-  }
-
-  try {
-    return new URL(refererHeader).origin;
-  } catch {
-    return '';
-  }
-}
-
-function requireTrustedOrigin(req, res, next) {
-  const requestOrigin = getRequestOrigin(req);
-  if (!isTrustedOrigin(req, requestOrigin)) {
-    return res.status(403).json({ error: 'Origin not allowed' });
-  }
-
-  return next();
-}
 
 function signSessionToken(sessionId) {
   const payload = JSON.stringify({
@@ -440,10 +423,6 @@ app.use((err, _req, res, next) => {
     return res.status(413).json({ error: 'Payload too large' });
   }
 
-  if (err.message === 'Origin not allowed by CORS') {
-    return res.status(403).json({ error: 'Origin not allowed' });
-  }
-
   return res.status(400).json({ error: 'Bad request' });
 });
 
@@ -456,7 +435,7 @@ app.get('/leads', (_req, res) => {
   res.redirect('/painel/');
 });
 
-app.post('/chat/session', requireTrustedOrigin, sessionLimiter, (req, res) => {
+app.post('/chat/session', sessionLimiter, (req, res) => {
   const sessionValidation = validateSessionId(req.body?.sessionId);
   if (!sessionValidation.valid) {
     return res.status(400).json({ error: sessionValidation.error });
@@ -469,7 +448,7 @@ app.post('/chat/session', requireTrustedOrigin, sessionLimiter, (req, res) => {
   });
 });
 
-app.post('/chat', requireTrustedOrigin, chatLimiter, async (req, res) => {
+app.post('/chat', chatLimiter, async (req, res) => {
   const { valid, error } = validateChatInput(req.body);
   if (!valid) {
     return res.status(400).json({ error });
@@ -502,7 +481,7 @@ app.post('/chat', requireTrustedOrigin, chatLimiter, async (req, res) => {
   }
 });
 
-app.post('/lead', requireTrustedOrigin, leadLimiter, async (req, res) => {
+app.post('/lead', leadLimiter, async (req, res) => {
   const sessionValidation = validateSessionId(req.body?.sessionId);
   if (!sessionValidation.valid) {
     return res.status(400).json({ error: sessionValidation.error });
